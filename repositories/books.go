@@ -1,6 +1,10 @@
 package repositories
 
 import (
+	"fmt"
+
+	"github.com/google/uuid"
+
 	"roman-munteanu/library-kata/models"
 )
 
@@ -8,8 +12,10 @@ var booksData map[string]models.Book
 
 type BooksRepositoryAPI interface {
 	FetchAll() ([]models.Book, error)
+	Save(b models.Book) (bool, error)
 	Borrow(userID, bookID string) (bool, error)
 	Return(userID, bookID string) (bool, error)
+	FetchUserBooks(userID string) ([]models.Book, error)
 }
 
 type BooksRepository struct {
@@ -46,15 +52,23 @@ func (r *BooksRepository) FetchAll() ([]models.Book, error) {
 	return books, nil
 }
 
+func (r *BooksRepository) Save(b models.Book) (bool, error) {
+	bookID := uuid.New().String()
+	b.ID = bookID
+	booksData[bookID] = b
+
+	return true, nil
+}
+
 func (r *BooksRepository) Borrow(userID, bookID string) (bool, error) {
 	book, ok := booksData[bookID]
 	if !ok {
-		return false, nil
+		return false, models.NotFoundError{Message: fmt.Sprintf("book not found: %s", bookID)}
 	}
 
 	// already taken
 	if book.TakenByUser != "" {
-		return false, nil
+		return false, models.GenericError{Message: fmt.Sprintf("book %s is already taken", bookID)}
 	}
 
 	book.TakenByUser = userID
@@ -66,16 +80,26 @@ func (r *BooksRepository) Borrow(userID, bookID string) (bool, error) {
 func (r *BooksRepository) Return(userID, bookID string) (bool, error) {
 	book, ok := booksData[bookID]
 	if !ok {
-		return false, nil
+		return false, models.NotFoundError{Message: fmt.Sprintf("book not found: %s", bookID)}
 	}
 
 	// not taken by current user
 	if book.TakenByUser != userID {
-		return false, nil
+		return false, models.GenericError{Message: fmt.Sprintf("book %s is not taken by user %s", bookID, userID)}
 	}
 
 	book.TakenByUser = ""
 	booksData[bookID] = book
 
 	return true, nil
+}
+
+func (r *BooksRepository) FetchUserBooks(userID string) ([]models.Book, error) {
+	books := make([]models.Book, 0)
+	for _, b := range booksData {
+		if b.TakenByUser == userID {
+			books = append(books, b)
+		}
+	}
+	return books, nil
 }

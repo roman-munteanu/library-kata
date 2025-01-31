@@ -16,6 +16,22 @@ type Request struct {
 	BookID string `json:"book_id"`
 }
 
+type NotFoundError struct {
+	Message string
+}
+
+func (e NotFoundError) Error() string {
+	return e.Message
+}
+
+type GenericError struct {
+	Message string
+}
+
+func (e GenericError) Error() string {
+	return e.Message
+}
+
 type Response struct {
 	IsSuccess bool `json:"is_success"`
 }

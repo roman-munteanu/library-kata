@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"github.com/google/uuid"
+
 	"roman-munteanu/library-kata/models"
 )
 
@@ -8,6 +10,7 @@ var usersData []models.User
 
 type UsersRepositoryAPI interface {
 	FetchAll() ([]models.User, error)
+	Save(u models.User) (bool, error)
 }
 
 type UsersRepository struct {
@@ -30,4 +33,11 @@ func NewUsersRepository() *UsersRepository {
 
 func (r *UsersRepository) FetchAll() ([]models.User, error) {
 	return usersData, nil
+}
+
+func (r *UsersRepository) Save(u models.User) (bool, error) {
+	u.ID = uuid.New().String()
+	usersData = append(usersData, u)
+
+	return true, nil
 }
